@@ -1,34 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
-      body {
-        margin: 40px auto;
-        max-width: 650px;
-        line-height: 1.6;
-        font-size: 18px;
-        font-family: "Courier New", Courier, monospace;
-        color: #444;
-        padding: 0 10px;
-      }
-      h2 {
-        line-height: 1.2;
-      }
+        #sidebar {
+            width: 100px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 200px;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #main {
+            margin-left: 100px;
+            padding-bottom: 200px;
+        }
+        #bottom {
+            height: 200px;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #f5f5f5;
+        }
     </style>
-  </head>
+</head>
+<body>
+    <div id="sidebar">
+        <button onclick="switchFunction('home')">Home</button>
+        <button onclick="switchFunction('search')">Search</button>
+        <button onclick="switchFunction('Function 3')">Library</button>
+    </div>
+    <div id="main">
+        <!-- Main content will go here -->
+    </div>
+    <div id="bottom">
+        <h3>Song: </h3>
+        <h3>Year: </h3>
+        <h3>Album: </h3>
+        <audio id="musicPlayer" controls autoplay style="width: 100%;">
+          <source src="/audio" type="audio/mpeg">
+        </audio>
+    </div>
+        
+    </div>
+    <script>
+        function switchFunction(func) {
+            switch (func) {
+                case 'home':
+                    document.getElementById('main').innerHTML = `
+                        <button onclick="changeSong(1)">Song 1</button>
+                        <button onclick="changeSong(2)">Song 2</button>
+                        <button onclick="changeSong(3)">Song 3</button>
+                    `;
+                    break;
+                case 'search':
+                    document.getElementById('main').innerHTML = `
+                        <div style="position: fixed; top: 0; width: 100%; margin: 10px 0;">
+                            <input type="text" id="searchInput" placeholder="Search...">
+                            <button onclick="search()">Search</button>
+                            <div id="searchSummary"></div>
+                        </div>
+                        <div id="searchResults" style="margin-top: 60px;"></div>
+                    `;
+                    document.getElementById('searchInput').addEventListener('keyup', function(event) {
+                        if (event.keyCode === 13) {
+                            event.preventDefault();
+                            search();
+                        }
+                    });
+                    break;
+                default:
+                    document.getElementById('main').innerHTML = `<h1>${func} is active</h1>`;
+                    break;
+            }
+        }
 
-  <body>
-    <h2>Chang Idol's Audio Streaming</h2>
-    <p></p>
-    <p>
-      Feel free to seek through the audio and it only loads the part you want to
-      listen.
-    </p>
-    <audio id="audioPlayer" controls autoplay>
-      <source src="/audio" type="audio/mp3" />
-    </audio>
-  </body>
+        var songs = [
+          {id: 1, song: 'Renai Circulation', year: '2009', album: 'Bakemonogatari'},
+          {id: 2, song: 'Idol', year: '2023', album: 'Single'},
+          {id: 3, song: 'song3', year: 'year3', album: 'album3'},
+        ]
+
+        function changeSong(song_id) {
+            console.log("Song playing: " + song_id);
+          var songElement = document.getElementById('bottom').children[0];
+          var yearElement = document.getElementById('bottom').children[1];
+          var albumElement = document.getElementById('bottom').children[2];
+          var audioElement = document.getElementById('musicPlayer');
+
+          var song = songs.find(s => s.id === song_id); // find song by id
+
+          if (song) {
+            songElement.textContent = `Song: ${song.song}`;
+            yearElement.textContent = `Year: ${song.year}`;
+            albumElement.textContent = `Album: ${song.album}`;
+
+            audioElement.src = `/api/v1/audio?audio_id=${song_id}`;
+          } else {
+            console.error(`No song found with id ${song_id}`);
+          }
+        }
+
+        function search() {
+            // Get the value of the search input field
+            var searchTerm = document.getElementById('searchInput').value;
+
+            // Check if the input value is not null or empty
+            if (searchTerm) {
+                // Send a GET request to the specified URL with the input value as a query parameter
+                fetch(`http://127.0.0.1:8000/api/v1/search?term=${encodeURIComponent(searchTerm)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Handle the response data here
+                        console.log(data);
+
+                        songs = data.result;                        
+                        
+                        
+                        var searchSummary = document.getElementById('searchSummary');
+                        searchSummary.innerHTML = `Found ${data.number} result(s) with keyword "${data.term}"`;
+
+
+                        var searchResults = document.getElementById('searchResults');
+                        searchResults.innerHTML = '';
+
+                        for (var i = 0; i < songs.length; i++) {
+                            var songDiv = document.createElement('div');
+                            songDiv.style.display = 'flex';
+                            songDiv.style.justifyContent = 'space-between';
+                            songDiv.style.alignItems = 'center';
+
+                            var songInfo = document.createElement('div');
+                            songInfo.innerHTML = `
+                                <p><strong>${songs[i].song}</strong></p>
+                                <p>${songs[i].year}</p>
+                                <p>${songs[i].album}</p>
+                            `;
+
+                            var playButton = document.createElement('button');  
+                            playButton.style.height = '3em';
+                            playButton.style.width = playButton.style.height;
+                            playButton.onclick = (function(index) {
+                                return function() { changeSong(songs[index].id); };
+                            })(i);
+                            playButton.textContent = 'Play';
+
+                            songDiv.appendChild(songInfo);
+                            songDiv.appendChild(playButton);
+
+                            searchResults.appendChild(songDiv);
+                        }
+                    })
+                    .catch(error => {
+                        // Handle the error here
+                        console.error('Error:', error);
+                    });
+            } else {
+                alert('Please enter a search term');
+            }
+        }
+    </script>
+</body>
 </html>
