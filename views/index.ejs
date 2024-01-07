@@ -119,17 +119,21 @@
 
 
             if (song) {
+                // Change audio source
+                var player = document.getElementById('musicPlayer');
+                var audioSource = player.getElementsByTagName('source')[0];
+                audioSource.src = `/api/v1/audio?audio_id=${song_id}`;
+                player.load();
+
+                // Change displayed song info
                 var songElement = document.getElementById('bottom').children[0];
                 var yearElement = document.getElementById('bottom').children[1];
                 var albumElement = document.getElementById('bottom').children[2];
-                var audioElement = document.getElementById('musicPlayer');
-
                 songElement.textContent = `Song: ${song.song}`;
                 yearElement.textContent = `Year: ${song.year}`;
                 albumElement.textContent = `Album: ${song.album}`;
 
-                audioElement.src = `/api/v1/audio?audio_id=${song_id}`;
-
+                // Push state to history
                 if (pushState) {
                     window.history.pushState({song_id : song_id}, null, `/listen/${song_id}`);
                 }
