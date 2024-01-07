@@ -2,27 +2,41 @@ const express = require("express");
 const app = express();
 const fs = require("fs");
 
+app.set("view engine", "ejs");
+
 app.use(express.static(__dirname + "/index.js"));
 
 app.get("/", function (req, res) {
-  res.sendFile(__dirname + "/index.html");
+  // res.sendFile(__dirname + "/index.html");
+  res.render("index", {});
 });
 
+app.get("/listen", function (req, res) {
+  res.redirect("/");
+});
 
+app.get("/listen/:id", function (req, res) {
+  songInfo = getInformation(req.params.id);
+
+  if (!songInfo) {
+    res.status(404).sendFile(__dirname + "/views/404.html");
+    return;
+  }
+
+  res.render("index", {
+    song_id: songInfo.id,
+    song: songInfo.song,
+    year: songInfo.year,
+    album: songInfo.album
+  });
+});
 
 app.get("/api/v1/search", function (req, res) {
   const searchTerm = req.query.term;
 
-  const data = [
-    { id: 1, song: 'Renai Circulation', year: '2009', album: 'Bakemonogatari' },
-    { id: 2, song: 'Idol', year: '2023', album: 'Single' },
-    { id: 3, song: 'song3', year: 'year3', album: 'album3' },
-    { id: 4, song: 'song4', year: 'year4', album: 'album4' },
-    { id: 5, song: 'song5', year: 'year5', album: 'album5' }
-  ];
+  // Search logic would go here. For now, just return mock data.
 
-  // const responseData = data.filter(item => item.song.toLowerCase().includes(searchTerm.toLowerCase()));
-  const responseData = data;
+  responseData = search(searchTerm);
 
   // Construct the response JSON
   const response = {
@@ -67,3 +81,25 @@ app.listen(8000, function () {
   console.log("Listening on port 8000!");
 });
 
+
+
+// Test data, will be replaced with database later
+const data = [
+  { id: 'renai', song: 'Renai Circulation', year: '2009', album: 'Bakemonogatari' },
+  { id: 'idol', song: 'Idol', year: '2023', album: 'Single' },
+  { id: 3, song: 'song3', year: 'year3', album: 'album3' },
+  { id: 4, song: 'song4', year: 'year4', album: 'album4' },
+  { id: 5, song: 'song5', year: 'year5', album: 'album5' }
+];
+
+function search(term) {
+  // return data.filter(item => item.song.toLowerCase().includes(term.toLowerCase()));
+  // Logic for searching would go here. For now, just return mock data.
+
+
+  return data;
+}
+
+function getInformation(id) {
+  return data.find(item => item.id === id);
+}
