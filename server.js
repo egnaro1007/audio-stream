@@ -20,25 +20,41 @@ app.get("/listen", function (req, res) {
 });
 
 app.get("/listen/:id", function (req, res) {
-  songInfo = getInformation(req.params.id);
+  getInformation(req.params.id)
+    .then(songInfo => {
+      if (!songInfo) {
+        res.status(404).sendFile(__dirname + "/views/404.html");
+        return;
+      }
 
-  if (!songInfo) {
-    res.status(404).sendFile(__dirname + "/views/404.html");
-    return;
-  }
+      res.render("index", {
+        song_id: songInfo.id,
+        song: songInfo.song,
+        year: songInfo.year,
+        album: songInfo.album
+      });
+    })
+    .catch(error => {
+      console.error(error);
+      res.status(500).send('An error occurred');
+    });
+});
 
-  res.render("index", {
-    song_id: songInfo.id,
-    song: songInfo.song,
-    year: songInfo.year,
-    album: songInfo.album
+
+app.get("/api/v1/getInfo", function (req, res) {
+  const songId = req.query.id;
+
+  getInformation(songId).then(songInfo => {
+    if (!songInfo) {
+      res.status(404).send("Not found");
+    } else {
+      res.json(songInfo);
+    }
   });
 });
 
 app.get("/api/v1/search", function (req, res) {
   const searchTerm = req.query.term;
-
-  // Search logic would go here. For now, just return mock data.
 
   search(searchTerm).then(responseData => {
     // Construct the response JSON
@@ -81,20 +97,14 @@ app.get("/api/v1/audio", function (req, res) {
   audioStream.pipe(res);
 });
 
+
 app.listen(8000, function () {
   console.log("Listening on port 8000!");
 });
 
 
 
-// Test data, will be replaced with database later
-const data = [
-  { id: 'renai', song: 'Renai Circulation', year: '2009', album: 'Bakemonogatari' },
-  { id: 'idol', song: 'Idol', year: '2023', album: 'Single' },
-  { id: 3, song: 'song3', year: 'year3', album: 'album3' },
-  { id: 4, song: 'song4', year: 'year4', album: 'album4' },
-  { id: 5, song: 'song5', year: 'year5', album: 'album5' }
-];
+
 
 function search(term) {
   // Logic for searching would go here. For now, just return mock data.
@@ -125,5 +135,30 @@ function search(term) {
 }
 
 function getInformation(id) {
-  return data.find(item => item.id === id);
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT Tracks.Id, Tracks.Name, Tracks.Year, Albums.AlbumName as Album 
+      FROM Tracks 
+      INNER JOIN Albums ON Tracks.AlbumId = Albums.AlbumId 
+      WHERE Tracks.Id = ?
+    `;
+    db.get(query, [`${id}`], function(err, row) {
+      if (err) {
+        console.log(err);
+        reject(err);
+      } else {
+        if (row) {
+          const result = {
+            id: row.Id,
+            song: row.Name,
+            year: row.Year,
+            album: row.Album
+          };
+          resolve(result);
+        } else {
+          resolve(null);
+        }
+      }
+    });
+  });
 }

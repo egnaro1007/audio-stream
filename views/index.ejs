@@ -55,9 +55,9 @@
             switch (func) {
                 case 'home':
                     document.getElementById('main').innerHTML = `
-                        <a href="/listen/renai"><button>Song 1</button></a>
-                        <a href="/listen/idol"><button>Song 2</button></a>
-                        <a href="/listen/3"><button>Song 3</button></a>
+                        <button onclick="changeSong('halzion')">Song 1</button>
+                        <button onclick="changeSong('idol')">Song 2</button>
+                        <button onclick="changeSong('3')">Song 3</button>
                     `;
                     window.history.pushState({}, null, `/`);
                     break;
@@ -90,20 +90,40 @@
 
         var songs = []
 
-        function changeSong(song_id, pushState = true) {
+        async function changeSong(song_id, pushState = true) {
             if (song_id === undefined) {
                 return;
             }
 
-            console.log("Song playing: " + song_id);
-            var songElement = document.getElementById('bottom').children[0];
-            var yearElement = document.getElementById('bottom').children[1];
-            var albumElement = document.getElementById('bottom').children[2];
-            var audioElement = document.getElementById('musicPlayer');
-
+    
             var song = songs.find(s => s.id === song_id); // find song by id
+            if (song === undefined) {
+                try {
+                    const response = await fetch(`/api/v1/getInfo?id=${song_id}`);
+                    if (!response.ok) {
+                        throw new Error("HTTP status " + response.status);
+                    }
+                    const data = await response.json();
+                    song = {
+                        id: data.id,
+                        song: data.song,
+                        year: data.year,
+                        album: data.album
+                    };
+                    songs.push(song);
+                    console.log(song);
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+
 
             if (song) {
+                var songElement = document.getElementById('bottom').children[0];
+                var yearElement = document.getElementById('bottom').children[1];
+                var albumElement = document.getElementById('bottom').children[2];
+                var audioElement = document.getElementById('musicPlayer');
+
                 songElement.textContent = `Song: ${song.song}`;
                 yearElement.textContent = `Year: ${song.year}`;
                 albumElement.textContent = `Album: ${song.album}`;
@@ -160,7 +180,7 @@
                 `;
 
                 // Send a GET request
-                fetch(`http://127.0.0.1:8000/api/v1/search?term=${encodeURIComponent(searchTerm)}`)
+                fetch(`/api/v1/search?term=${encodeURIComponent(searchTerm)}`)
                     .then(response => response.json())
                     .then(data => {
                         console.log(data);                      
