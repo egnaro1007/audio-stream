@@ -1,6 +1,10 @@
+const { Console } = require("console");
 const express = require("express");
 const app = express();
 const fs = require("fs");
+
+var sqlite3 = require('sqlite3').verbose();
+var db = new sqlite3.Database('database.db');
 
 app.set("view engine", "ejs");
 
@@ -36,16 +40,16 @@ app.get("/api/v1/search", function (req, res) {
 
   // Search logic would go here. For now, just return mock data.
 
-  responseData = search(searchTerm);
+  search(searchTerm).then(responseData => {
+    // Construct the response JSON
+    const response = {
+      term: searchTerm,
+      number: responseData.length,
+      result: responseData
+    };
 
-  // Construct the response JSON
-  const response = {
-    term: searchTerm,
-    number: responseData.length,
-    result: responseData
-  };
-
-  res.json(response);
+    res.json(response);
+  });
 });
 
 app.get("/api/v1/audio", function (req, res) {
@@ -93,11 +97,31 @@ const data = [
 ];
 
 function search(term) {
-  // return data.filter(item => item.song.toLowerCase().includes(term.toLowerCase()));
   // Logic for searching would go here. For now, just return mock data.
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT Tracks.Id, Tracks.Name, Tracks.Year, Albums.AlbumName as Album 
+      FROM Tracks 
+      INNER JOIN Albums ON Tracks.AlbumId = Albums.AlbumId 
+      WHERE Tracks.Name LIKE ?
+    `;
+    db.all(query, [`%${term}%`], function(err, rows) {
+      if (err) {
+        reject(err);
+      } else {
+        const results = rows.map(row => ({
+          id: row.Id,
+          song: row.Name,
+          year: row.Year,
+          album: row.Album
+        }));
+        resolve(results);
+      }
+    });
+  })
 
 
-  return data;
+  // return data;
 }
 
 function getInformation(id) {
