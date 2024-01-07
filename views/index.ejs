@@ -55,9 +55,9 @@
             switch (func) {
                 case 'home':
                     document.getElementById('main').innerHTML = `
-                        <button onclick="changeSong(1)">Song 1</button>
-                        <button onclick="changeSong(2)">Song 2</button>
-                        <button onclick="changeSong(3)">Song 3</button>
+                        <a href="/listen/renai"><button>Song 1</button></a>
+                        <a href="/listen/idol"><button>Song 2</button></a>
+                        <a href="/listen/3"><button>Song 3</button></a>
                     `;
                     window.history.pushState({}, null, `/`);
                     break;
