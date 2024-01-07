@@ -59,6 +59,7 @@
                         <button onclick="changeSong(2)">Song 2</button>
                         <button onclick="changeSong(3)">Song 3</button>
                     `;
+                    window.history.pushState({}, null, `/`);
                     break;
                 case 'search':
                     document.getElementById('main').innerHTML = `
@@ -75,6 +76,11 @@
                             search();
                         }
                     });
+                    window.history.pushState({}, null, `/search`);
+                    break;
+                case 'Function 3':
+                    document.getElementById('main').innerHTML = `<h1>${func} is active</h1>`;
+                    window.history.pushState({}, null, `/function3`);
                     break;
                 default:
                     document.getElementById('main').innerHTML = `<h1>${func} is active</h1>`;
@@ -82,13 +88,9 @@
             }
         }
 
-        var songs = [
-          {id: 1, song: 'Renai Circulation', year: '2009', album: 'Bakemonogatari'},
-          {id: 2, song: 'Idol', year: '2023', album: 'Single'},
-          {id: 3, song: 'song3', year: 'year3', album: 'album3'},
-        ]
+        var songs = []
 
-        function changeSong(song_id) {
+        function changeSong(song_id, pushState = true) {
             console.log("Song playing: " + song_id);
           var songElement = document.getElementById('bottom').children[0];
           var yearElement = document.getElementById('bottom').children[1];
@@ -103,34 +105,69 @@
             albumElement.textContent = `Album: ${song.album}`;
 
             audioElement.src = `/api/v1/audio?audio_id=${song_id}`;
+
+            if (pushState) {
+                window.history.pushState({song_id : song_id}, null, `/listen/${song_id}`);
+            }
+
+            document.title = "Playing: " + song.song + " - " + song.album + " (" + song.year + ")";
           } else {
             console.error(`No song found with id ${song_id}`);
           }
         }
 
-        function search() {
-            // Get the value of the search input field
-            var searchTerm = document.getElementById('searchInput').value;
+        window.onpopstate = function(event) {
+            var song_id = Number(window.location.pathname.split('/')[2]);
+            changeSong(song_id, false);
+        };
 
-            // Check if the input value is not null or empty
+
+        function search() {
+            var searchTerm = document.getElementById('searchInput').value;
+            var searchSummary = document.getElementById('searchSummary');
+            var searchResults = document.getElementById('searchResults');
+
             if (searchTerm) {
-                // Send a GET request to the specified URL with the input value as a query parameter
+                searchSummary.innerHTML = '';
+                searchResults.innerHTML = `
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin:auto;background:#fff;display:block;" width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+                        <defs>
+                            <clipPath id="ldio-z0rlp4punxt-cp" x="0" y="0" width="100" height="100">
+                                <path d="M81.3,58.7H18.7c-4.8,0-8.7-3.9-8.7-8.7v0c0-4.8,3.9-8.7,8.7-8.7h62.7c4.8,0,8.7,3.9,8.7,8.7v0C90,54.8,86.1,58.7,81.3,58.7z"></path>
+                            </clipPath>
+                        </defs>
+                        <path fill="none" stroke="#575757" stroke-width="2.7928" d="M82 63H18c-7.2,0-13-5.8-13-13v0c0-7.2,5.8-13,13-13h64c7.2,0,13,5.8,13,13v0C95,57.2,89.2,63,82,63z"></path>
+                            <g clip-path="url(#ldio-z0rlp4punxt-cp)">
+                            <g>
+                                <rect x="-100" y="0" width="25" height="100" fill="#e15b64"></rect>
+                                <rect x="-75" y="0" width="25" height="100" fill="#f47e60"></rect>
+                                <rect x="-50" y="0" width="25" height="100" fill="#f8b26a"></rect>
+                                <rect x="-25" y="0" width="25" height="100" fill="#abbd81"></rect>
+                                <rect x="0" y="0" width="25" height="100" fill="#e15b64"></rect>
+                                <rect x="25" y="0" width="25" height="100" fill="#f47e60"></rect>
+                                <rect x="50" y="0" width="25" height="100" fill="#f8b26a"></rect>
+                                <rect x="75" y="0" width="25" height="100" fill="#abbd81"></rect>
+                                <animateTransform attributeName="transform" type="translate" dur="1s" repeatCount="indefinite" keyTimes="0;1" values="0;100"></animateTransform>
+                            </g>
+                        </g>
+                    </svg>
+                </div>
+                `;
+
+                // Send a GET request
                 fetch(`http://127.0.0.1:8000/api/v1/search?term=${encodeURIComponent(searchTerm)}`)
                     .then(response => response.json())
                     .then(data => {
-                        // Handle the response data here
-                        console.log(data);
-
-                        songs = data.result;                        
+                        console.log(data);                      
                         
                         
-                        var searchSummary = document.getElementById('searchSummary');
                         searchSummary.innerHTML = `Found ${data.number} result(s) with keyword "${data.term}"`;
 
-
-                        var searchResults = document.getElementById('searchResults');
                         searchResults.innerHTML = '';
 
+
+                        songs = data.result;  
                         for (var i = 0; i < songs.length; i++) {
                             var songDiv = document.createElement('div');
                             songDiv.style.display = 'flex';
